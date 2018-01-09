@@ -9,6 +9,8 @@ const minCSS = require("gulp-clean-css");
 const maps = require("gulp-sourcemaps");
 const imagemin = require('gulp-imagemin');
 const del = require("del");
+const connect = require('gulp-connect');
+const livereload = require("gulp-livereload");
 
 // this task concatinates the 2 JS files together for better performance to a file called "glodal.js" in the js folder.
 
@@ -43,13 +45,17 @@ return gulp.src("sass/global.scss")
 .pipe(gulp.dest("css"));
 })
 
-//Much like the "scripts" task, this task also minifies the CSS created from the "compileSass" task and uses it as a dependancy.
-
+/*Much like the "scripts" task, this task also minifies the CSS created from the "compileSass" task and uses it as a dependancy.
+Also use liverreload on this task which works with the watch task, if any changes are made, the page reloads
+*/
 gulp.task("styles", ["compileSass"], function(){
 return gulp.src("css/global.css")
 .pipe(minCSS())
 .pipe(rename("all.min.css"))
-.pipe(gulp.dest("dist/styles"));
+.pipe(gulp.dest("dist/styles"))
+.pipe(livereload())
+livereload.listen()
+
 });
 
 // used globbing pattern to get all the jpg and png files in the images directory and optimise them and put in dist/content
@@ -65,25 +71,32 @@ gulp.task("clean", function() {
 del(["dist", "css","js/global.js","js/global.js.map"]);
 });
 
-//the watch task runs when any changes are made the the source sass files and then is compiled and minified with the styles task
-
-gulp.task("watchSass", function(){
-gulp.watch("sass/circle/**/*scss", ["styles"]);
-});
-
-/*the build task runs the clean task first and adds the html file to the dist folder as well as running the
-scripts,styles and images task to put the appropriate files into the dist folder, ready for deployment.
+/*the build task runs the clean task first and then runs scripts,styles and images task
+to put the appropriate files into the dist folder, ready for deployment.
 */
 gulp.task("build", ["clean"], function(){
-gulp.src("index.html")
-.pipe(gulp.dest("dist"));
 gulp.start(["scripts","styles","images"]);
-
 });
 
-/*the default task runs by typing "gulp" which will firstly run the "watchSass" task for any changes
-the the src code, then it will run the build task, which completes the build process.
+/*the watch task runs when any changes are made the the source sass files and then is compiled and minified with the styles task.
+The watch task also listens for any changes in regards to reloading the page.
+*/
+gulp.task("watchSass", function(){
+gulp.watch(["sass/circle/**/*sass", "sass/_variables.scss", "global.scss"], ["styles"])
+livereload.listen()
+});
+
+//Boots up a server on port 8080 and uses the watchSass task as a dependancy
+
+gulp.task('connect',["watchSass"], function() {
+  connect.server({
+    root: '.'
+  });
+  console.log("This is on port 8080!");
+});
+
+/*the default task runs by typing "gulp" which will firstly run the "build" task and then start the server.
  */
-gulp.task("default", ["watchSass"], function(){
-gulp.start("build");
+gulp.task("default", ["build"], function(){
+  gulp.start("connect");
 });
