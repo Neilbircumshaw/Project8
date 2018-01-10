@@ -53,8 +53,8 @@ return gulp.src("css/global.css")
 .pipe(minCSS())
 .pipe(rename("all.min.css"))
 .pipe(gulp.dest("dist/styles"))
-.pipe(livereload())
-livereload.listen()
+.pipe(livereload());
+
 
 });
 
